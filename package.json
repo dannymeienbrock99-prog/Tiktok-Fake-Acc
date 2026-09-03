@@ -1,0 +1,16 @@
+{
+  "name": "tiktok-fake-acc",
+  "version": "0.1.0",
+  "description": "Desktop tool for comparing public TikTok accounts and finding possible related accounts.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0"
+  },
+  "devDependencies": {
+    "electron": "^36.2.0"
+  }
+}
