@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const Database = require('better-sqlite3');
-const { fetchProfile } = require('./providers');
+const { fetchProfile, searchCandidates } = require('./providers');
 
 let db;
 
@@ -57,7 +57,18 @@ function getSetting(key) {
   return db.prepare('SELECT value FROM settings WHERE key = ?').get(key)?.value || '';
 }
 
+function getProviderSettings() {
+  return {
+    eulerKey: getSetting('eulerKey'),
+    eulerBaseUrl: getSetting('eulerBaseUrl') || 'https://api.eulerstream.com',
+    tikapiKey: getSetting('tikapiKey'),
+    customKey: getSetting('customKey'),
+    customTemplate: getSetting('customTemplate')
+  };
+}
+
 function saveProfile(profile) {
+  if (!profile?.provider || !profile?.unique_id) return;
   db.prepare(`
     INSERT INTO profiles(provider,user_id,unique_id,nickname,bio,avatar_url,follower_count,following_count,likes_count,video_count,verified,region,raw_json)
     VALUES(@provider,@user_id,@unique_id,@nickname,@bio,@avatar_url,@follower_count,@following_count,@likes_count,@video_count,@verified,@region,@raw_json)
@@ -92,14 +103,14 @@ ipcMain.handle('profiles:list', () => db.prepare('SELECT * FROM profiles ORDER B
 ipcMain.handle('profiles:save', (_, profile) => { saveProfile(profile); return true; });
 
 ipcMain.handle('profile:fetch', async (_, provider, handle) => {
-  const settings = {
-    eulerKey: getSetting('eulerKey'),
-    eulerBaseUrl: getSetting('eulerBaseUrl') || 'https://api.eulerstream.com',
-    tikapiKey: getSetting('tikapiKey'),
-    customKey: getSetting('customKey'),
-    customTemplate: getSetting('customTemplate')
-  };
-  const profile = await fetchProfile(provider, handle, settings);
+  const profile = await fetchProfile(provider, handle, getProviderSettings());
   saveProfile(profile);
   return profile;
+});
+
+ipcMain.handle('candidates:auto-search', async (_, source) => {
+  if (!source?.unique_id) throw new Error('Zuerst einen Hauptaccount laden.');
+  const result = await searchCandidates(source, getProviderSettings());
+  for (const profile of result.results) saveProfile(profile);
+  return result;
 });
