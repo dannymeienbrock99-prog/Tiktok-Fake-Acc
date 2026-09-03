@@ -30,17 +30,39 @@ function renderSource(){
 }
 function renderCandidates(){
   if(!source){$('candidateGrid').innerHTML='<div class="card">Zuerst einen Hauptaccount laden.</div>';return}
-  $('candidateGrid').innerHTML=candidates.map(p=>{const s=scoreCandidate(source,p);return `<article class="candidate-card card"><div class="candidate-top">${avatar(p)}<div><strong>${esc(p.nickname||p.unique_id)}</strong><div class="handle">@${esc(p.unique_id)}</div></div><div class="score">${s.score}%<small>Ähnlichkeit</small></div></div>${stats(p)}<div class="reasons">${(s.reasons.length?s.reasons:['keine starken öffentlichen Übereinstimmungen']).map(r=>`<span class="pill">${esc(r)}</span>`).join('')}</div></article>`}).join('') || '<div class="card">Noch keine Kandidaten geladen.</div>';
+  const ranked = candidates.map(p=>({p,s:scoreCandidate(source,p)})).sort((a,b)=>b.s.score-a.s.score);
+  $('candidateGrid').innerHTML=ranked.map(({p,s})=>`<article class="candidate-card card"><div class="candidate-top">${avatar(p)}<div><strong>${esc(p.nickname||p.unique_id)}</strong><div class="handle">@${esc(p.unique_id)}</div><small>${esc(p.provider||'unbekannt')}</small></div><div class="score">${s.score}%<small>Ähnlichkeit</small></div></div>${stats(p)}<div class="reasons">${(s.reasons.length?s.reasons:['keine starken öffentlichen Übereinstimmungen']).map(r=>`<span class="pill">${esc(r)}</span>`).join('')}</div></article>`).join('') || '<div class="card">Noch keine Kandidaten gefunden.</div>';
+  if($('candidateCount')) $('candidateCount').textContent=`${ranked.length} Kandidaten`;
 }
 async function doFetch(handle, isCandidate=false){
   const provider=$('provider').value; const clean=String(handle||'').trim(); if(!clean) return;
   $('status').className='status'; $('status').textContent=`Lade ${clean} über ${provider} …`;
   try{
     const p=await window.appAPI.fetchProfile(provider,clean);
-    if(isCandidate){ candidates=candidates.filter(x=>!(x.provider===p.provider&&x.unique_id===p.unique_id)); candidates.unshift(p); renderCandidates(); }
+    if(isCandidate){ candidates=candidates.filter(x=>x.unique_id.toLowerCase()!==p.unique_id.toLowerCase()); candidates.unshift(p); renderCandidates(); }
     else { source=p; candidates=[]; renderSource(); renderCandidates(); }
     $('status').textContent=`Profil @${p.unique_id} geladen und lokal gespeichert.`;
   }catch(e){ $('status').className='status error'; $('status').textContent=e?.message||String(e); }
+}
+async function autoSearch(){
+  if(!source){ $('status').className='status error'; $('status').textContent='Zuerst einen Hauptaccount laden.'; return; }
+  $('status').className='status';
+  $('status').textContent=`Suche automatisch nach möglichen Accounts zu @${source.unique_id} …`;
+  $('autoSearchBtn').disabled=true;
+  try{
+    const result=await window.appAPI.autoSearchCandidates(source);
+    const seen=new Map();
+    for(const p of [...candidates,...(result.results||[])]){
+      const key=String(p.unique_id||'').toLowerCase();
+      if(key && key!==String(source.unique_id).toLowerCase() && !seen.has(key)) seen.set(key,p);
+    }
+    candidates=[...seen.values()];
+    renderCandidates();
+    const q=(result.queries||[]).map(x=>`„${x}“`).join(', ');
+    const warnings=(result.errors||[]).length?` Hinweise: ${(result.errors||[]).join(' | ')}`:'';
+    $('status').textContent=`Automatische Suche fertig: ${candidates.length} mögliche Accounts gefunden. Suchbegriffe: ${q}.${warnings}`;
+  }catch(e){ $('status').className='status error'; $('status').textContent=e?.message||String(e); }
+  finally{ $('autoSearchBtn').disabled=false; }
 }
 async function loadHistory(){
   const rows=await window.appAPI.listProfiles();
@@ -52,6 +74,7 @@ async function saveSettings(){for(const key of ['eulerKey','eulerBaseUrl','tikap
 document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',async()=>{document.querySelectorAll('.nav,.view').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.view).classList.add('active');if(btn.dataset.view==='history') await loadHistory();if(btn.dataset.view==='settings') await loadSettings();}));
 $('fetchBtn').addEventListener('click',()=>doFetch($('handle').value,false));
 $('handle').addEventListener('keydown',e=>{if(e.key==='Enter')doFetch(e.target.value,false)});
+$('autoSearchBtn').addEventListener('click',autoSearch);
 $('candidateBtn').addEventListener('click',()=>doFetch($('candidateHandle').value,true));
 $('candidateHandle').addEventListener('keydown',e=>{if(e.key==='Enter')doFetch(e.target.value,true)});
 $('clearCandidates').addEventListener('click',()=>{candidates=[];renderCandidates()});
