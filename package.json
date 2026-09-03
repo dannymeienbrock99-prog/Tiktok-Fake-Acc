@@ -5,12 +5,24 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron ."
+    "dev": "electron .",
+    "build": "electron-builder --win nsis",
+    "build:portable": "electron-builder --win portable"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0"
   },
   "devDependencies": {
-    "electron": "^36.2.0"
+    "electron": "^36.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "de.crazybatto.tiktokfakeacc",
+    "productName": "Crazy_Batto TikTok Account Analyzer",
+    "asar": true,
+    "files": ["src/**/*", "package.json"],
+    "directories": {"output": "dist"},
+    "win": {"target": ["nsis"], "artifactName": "TikTok-Account-Analyzer-Setup-${version}.${ext}"},
+    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true}
   }
 }
