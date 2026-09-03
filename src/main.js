@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const Database = require('better-sqlite3');
+const { fetchProfile } = require('./providers');
 
 let db;
 
@@ -32,14 +33,6 @@ function initDb() {
       last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(provider, unique_id)
     );
-    CREATE TABLE IF NOT EXISTS comparisons (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      source_unique_id TEXT NOT NULL,
-      candidate_unique_id TEXT NOT NULL,
-      score INTEGER NOT NULL,
-      reasons_json TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
   `);
 }
 
@@ -60,6 +53,22 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 
+function getSetting(key) {
+  return db.prepare('SELECT value FROM settings WHERE key = ?').get(key)?.value || '';
+}
+
+function saveProfile(profile) {
+  db.prepare(`
+    INSERT INTO profiles(provider,user_id,unique_id,nickname,bio,avatar_url,follower_count,following_count,likes_count,video_count,verified,region,raw_json)
+    VALUES(@provider,@user_id,@unique_id,@nickname,@bio,@avatar_url,@follower_count,@following_count,@likes_count,@video_count,@verified,@region,@raw_json)
+    ON CONFLICT(provider, unique_id) DO UPDATE SET
+      user_id=excluded.user_id,nickname=excluded.nickname,bio=excluded.bio,avatar_url=excluded.avatar_url,
+      follower_count=excluded.follower_count,following_count=excluded.following_count,likes_count=excluded.likes_count,
+      video_count=excluded.video_count,verified=excluded.verified,region=excluded.region,raw_json=excluded.raw_json,
+      last_seen_at=CURRENT_TIMESTAMP
+  `).run(profile);
+}
+
 app.whenReady().then(() => {
   initDb();
   createWindow();
@@ -72,31 +81,25 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-ipcMain.handle('settings:get', (_, key) => {
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
-  return row?.value || '';
-});
-
+ipcMain.handle('settings:get', (_, key) => getSetting(key));
 ipcMain.handle('settings:set', (_, key, value) => {
   db.prepare(`INSERT INTO settings(key, value) VALUES(?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value`).run(key, String(value || ''));
   return true;
 });
 
-ipcMain.handle('profiles:list', () => {
-  return db.prepare('SELECT * FROM profiles ORDER BY last_seen_at DESC LIMIT 250').all();
-});
+ipcMain.handle('profiles:list', () => db.prepare('SELECT * FROM profiles ORDER BY last_seen_at DESC LIMIT 250').all());
+ipcMain.handle('profiles:save', (_, profile) => { saveProfile(profile); return true; });
 
-ipcMain.handle('profiles:save', (_, profile) => {
-  const stmt = db.prepare(`
-    INSERT INTO profiles(provider,user_id,unique_id,nickname,bio,avatar_url,follower_count,following_count,likes_count,video_count,verified,region,raw_json)
-    VALUES(@provider,@user_id,@unique_id,@nickname,@bio,@avatar_url,@follower_count,@following_count,@likes_count,@video_count,@verified,@region,@raw_json)
-    ON CONFLICT(provider, unique_id) DO UPDATE SET
-      user_id=excluded.user_id,nickname=excluded.nickname,bio=excluded.bio,avatar_url=excluded.avatar_url,
-      follower_count=excluded.follower_count,following_count=excluded.following_count,likes_count=excluded.likes_count,
-      video_count=excluded.video_count,verified=excluded.verified,region=excluded.region,raw_json=excluded.raw_json,
-      last_seen_at=CURRENT_TIMESTAMP
-  `);
-  stmt.run(profile);
-  return true;
+ipcMain.handle('profile:fetch', async (_, provider, handle) => {
+  const settings = {
+    eulerKey: getSetting('eulerKey'),
+    eulerBaseUrl: getSetting('eulerBaseUrl') || 'https://api.eulerstream.com',
+    tikapiKey: getSetting('tikapiKey'),
+    customKey: getSetting('customKey'),
+    customTemplate: getSetting('customTemplate')
+  };
+  const profile = await fetchProfile(provider, handle, settings);
+  saveProfile(profile);
+  return profile;
 });
