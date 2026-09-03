@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld('appAPI', {
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
   listProfiles: () => ipcRenderer.invoke('profiles:list'),
   saveProfile: (profile) => ipcRenderer.invoke('profiles:save', profile),
-  fetchProfile: (provider, handle) => ipcRenderer.invoke('profile:fetch', provider, handle)
+  fetchProfile: (provider, handle) => ipcRenderer.invoke('profile:fetch', provider, handle),
+  autoSearchCandidates: (source) => ipcRenderer.invoke('candidates:auto-search', source)
 });
