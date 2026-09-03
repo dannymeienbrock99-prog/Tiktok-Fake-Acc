@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TikTok Fake Account Analyzer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">CB</div>
+        <div><strong>TikTok Analyzer</strong><span>Crazy_Batto Tools</span></div>
+      </div>
+      <button class="nav active" data-view="search">Account-Suche</button>
+      <button class="nav" data-view="history">Gespeicherte Profile</button>
+      <button class="nav" data-view="settings">API-Einstellungen</button>
+      <div class="notice">Das Tool bewertet öffentliche Profil-Ähnlichkeiten. Ein Treffer beweist nicht, dass dieselbe Person hinter mehreren Accounts steckt.</div>
+    </aside>
+
+    <main class="content">
+      <section id="search" class="view active">
+        <header><p class="eyebrow">ACCOUNT ANALYZER</p><h1>Mögliche zusammengehörige TikTok-Accounts prüfen</h1><p>Profil laden, Kandidaten ergänzen und öffentliche Merkmale vergleichen.</p></header>
+        <div class="searchbar card">
+          <select id="provider"><option value="euler">Euler Stream</option><option value="tikapi">TikAPI</option><option value="custom">Custom Provider</option></select>
+          <input id="handle" placeholder="@username" autocomplete="off" />
+          <button id="fetchBtn" class="primary">Profil laden</button>
+        </div>
+        <div id="status" class="status"></div>
+        <div id="sourceProfile"></div>
+        <section class="candidate-section">
+          <div class="section-head"><div><h2>Kandidaten vergleichen</h2><p>Weitere bekannte oder verdächtige Handles laden.</p></div><button id="clearCandidates" class="ghost">Liste leeren</button></div>
+          <div class="candidate-add card"><input id="candidateHandle" placeholder="@möglicher_zweitaccount"/><button id="candidateBtn">Kandidat laden</button></div>
+          <div id="candidateGrid" class="grid"></div>
+        </section>
+      </section>
+
+      <section id="history" class="view">
+        <header><p class="eyebrow">LOKALE DATENBANK</p><h1>Gespeicherte Profile</h1><p>Erkannte Profile werden lokal gespeichert, damit spätere Änderungen sichtbar bleiben.</p></header>
+        <div id="historyGrid" class="grid"></div>
+      </section>
+
+      <section id="settings" class="view">
+        <header><p class="eyebrow">PROVIDER</p><h1>API-Einstellungen</h1><p>Keys werden nur lokal in der App-Datenbank gespeichert.</p></header>
+        <div class="settings-grid">
+          <label class="card"><span>Euler API-Key</span><input id="eulerKey" type="password" placeholder="API-Key"/><small>Für /tiktok/users/{unique_id}/basic</small></label>
+          <label class="card"><span>Euler Base URL</span><input id="eulerBaseUrl" value="https://api.eulerstream.com"/></label>
+          <label class="card"><span>TikAPI API-Key</span><input id="tikapiKey" type="password" placeholder="API-Key"/><small>Verwendet /public/check?username=...</small></label>
+          <label class="card"><span>Custom API-Key</span><input id="customKey" type="password" placeholder="optional"/></label>
+          <label class="card wide"><span>Custom URL-Template</span><input id="customTemplate" placeholder="https://example/api/user/{username}"/><small>{username} oder {handle} wird ersetzt.</small></label>
+        </div>
+        <button id="saveSettings" class="primary">Einstellungen speichern</button>
+        <div id="settingsStatus" class="status"></div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
