@@ -21,7 +21,7 @@
 
     <main class="content">
       <section id="search" class="view active">
-        <header><p class="eyebrow">ACCOUNT ANALYZER</p><h1>Mögliche zusammengehörige TikTok-Accounts prüfen</h1><p>Profil laden, Kandidaten ergänzen und öffentliche Merkmale vergleichen.</p></header>
+        <header><p class="eyebrow">ACCOUNT ANALYZER</p><h1>Mögliche zusammengehörige TikTok-Accounts prüfen</h1><p>Hauptaccount laden und danach automatisch nach ähnlichen öffentlichen Accounts suchen.</p></header>
         <div class="searchbar card">
           <select id="provider"><option value="euler">Euler Stream</option><option value="tikapi">TikAPI</option><option value="custom">Custom Provider</option></select>
           <input id="handle" placeholder="@username" autocomplete="off" />
@@ -29,10 +29,19 @@
         </div>
         <div id="status" class="status"></div>
         <div id="sourceProfile"></div>
+
         <section class="candidate-section">
-          <div class="section-head"><div><h2>Kandidaten vergleichen</h2><p>Weitere bekannte oder verdächtige Handles laden.</p></div><button id="clearCandidates" class="ghost">Liste leeren</button></div>
-          <div class="candidate-add card"><input id="candidateHandle" placeholder="@möglicher_zweitaccount"/><button id="candidateBtn">Kandidat laden</button></div>
+          <div class="section-head">
+            <div><h2>Automatische Kandidatensuche</h2><p>Durchsucht verfügbare Provider nach ähnlichen Handles und Nicknames und sortiert die Treffer nach öffentlicher Ähnlichkeit.</p></div>
+            <button id="autoSearchBtn" class="primary">Automatisch suchen</button>
+          </div>
+          <div class="section-head"><div><strong id="candidateCount">0 Kandidaten</strong></div><button id="clearCandidates" class="ghost">Liste leeren</button></div>
           <div id="candidateGrid" class="grid"></div>
+        </section>
+
+        <section class="candidate-section">
+          <div class="section-head"><div><h2>Kandidat manuell ergänzen</h2><p>Falls du bereits einen verdächtigen Account kennst, kannst du ihn zusätzlich direkt laden.</p></div></div>
+          <div class="candidate-add card"><input id="candidateHandle" placeholder="@möglicher_zweitaccount"/><button id="candidateBtn">Kandidat laden</button></div>
         </section>
       </section>
 
@@ -44,9 +53,9 @@
       <section id="settings" class="view">
         <header><p class="eyebrow">PROVIDER</p><h1>API-Einstellungen</h1><p>Keys werden nur lokal in der App-Datenbank gespeichert.</p></header>
         <div class="settings-grid">
-          <label class="card"><span>Euler API-Key</span><input id="eulerKey" type="password" placeholder="API-Key"/><small>Für /tiktok/users/{unique_id}/basic</small></label>
+          <label class="card"><span>Euler API-Key</span><input id="eulerKey" type="password" placeholder="API-Key"/><small>Profilabfrage plus Ranking-Katalog-Suche.</small></label>
           <label class="card"><span>Euler Base URL</span><input id="eulerBaseUrl" value="https://api.eulerstream.com"/></label>
-          <label class="card"><span>TikAPI API-Key</span><input id="tikapiKey" type="password" placeholder="API-Key"/><small>Verwendet /public/check?username=...</small></label>
+          <label class="card"><span>TikAPI API-Key</span><input id="tikapiKey" type="password" placeholder="API-Key"/><small>Profilabfrage plus /public/search/users.</small></label>
           <label class="card"><span>Custom API-Key</span><input id="customKey" type="password" placeholder="optional"/></label>
           <label class="card wide"><span>Custom URL-Template</span><input id="customTemplate" placeholder="https://example/api/user/{username}"/><small>{username} oder {handle} wird ersetzt.</small></label>
         </div>
